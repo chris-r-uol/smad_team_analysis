@@ -7,10 +7,10 @@ import torch
 from bs4 import BeautifulSoup
 from collections import Counter
 from transformers import AutoModel, AutoTokenizer
-#from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics.pairwise import cosine_similarity
 
 
-token = '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'
+#token = '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'
 
 @st.cache_resource
 def load_model(model_name):
@@ -37,13 +37,29 @@ def scrape_profile_data(html):
     
     # Select the specific div with class="cms"
     cms_div = soup.find('div', class_='cms')
-    
+    #st.code(cms_div)
+    #cms_div = re.sub(r'</ul>\s*<p>', '</ul> <p>', cms_div)
     if cms_div:
         # Extract text content from the selected div
-        data_text = cms_div.get_text(strip=True)
+        #data_text = cms_div.get_text(strip=True)
+        data_text = cms_div.get_text().join(cms_div.strings)
+        # Add a space after closing </ul> tag and before <p> tag
+        data_text = re.sub(r'</ul>\s*<p>', '</ul> <p>', data_text)
         
         # Remove HTML tags
-        data_text_no_html = BeautifulSoup(data_text, 'html.parser').get_text(strip=True, separator='\n')
+        data_text_no_html = BeautifulSoup(data_text, 'html.parser').get_text(strip=True)
+        
+        # Replace bullet points with a space
+        data_text_no_html = re.sub(r'\s*•\s*', ' ', data_text_no_html)
+
+        # Replace newline characters with a space
+        data_text_no_html = data_text_no_html.replace('\n', ' ')
+
+        # Add a space after closing </ul> tag and before <p> tag
+        data_text_no_html = re.sub(r'</ul>\s*<p>', '</ul> <p>', data_text_no_html)
+
+        # Replace multiple consecutive spaces with a single space
+        data_text_no_html = re.sub(r'\s+', ' ', data_text_no_html)
 
         # Define a list of headings to split on
         headings = ['Profile', 'Responsibilities', 'Research interests', 'Research projects', 'Publications', 'Qualifications', 'Professional memberships', 'Student education', 'Research groups and institutes', 'Current posgraduate researchers', 'Postgraduate research ']
@@ -73,25 +89,31 @@ def scrape_profile_data(html):
     else:
         st.warning('Warning: No Class CMS DIV found on the page')
         return None
-
+@st.cache_resource()
 def analyse_text(text):
-    
+
     nlp = spacy.load('en_core_web_sm')
     doc = nlp(text.lower())
-    noun_phrases = set(chunk.text.strip().lower for chunk in doc.noun_chunks)
-    nouns = set()
-    for token in doc:
-        if token.pos_ == 'NOUN':
-            nouns.add(token.text)
+    #st.write(text.lower())
+    #noun_phrases = set(chunk.text.strip().lower for chunk in doc.noun_chunks)
+    #nouns = set()
+    #for token in doc:
+    #    if token.pos_ == 'NOUN':
+    #        nouns.add(token.text)
     
-    all_nouns = nouns.union(noun_phrases)
-    st.subheader('spaCy')
-    st.write(all_nouns)
-    candidates = [token.lemma_ for token in doc if not token.is_stop and token.is_alpha]
-    st.write(candidates)
+    #all_nouns = nouns.union(noun_phrases)
+    #st.subheader('spaCy')
+    #st.write(all_nouns)
     
+    candidates = [token.lemma_ for token in doc if not token.is_stop and token.is_alpha and token.pos_ == 'NOUN']
+    #candidates = [token.lemma_ for token in all_nouns if not token.is_stop and token.is_alpha]
     
-    st.subheader('Keywords')
+    #st.write(all_nouns)
+    #st.write(candidates)
+
+    #st.write(candidates_old)
+
+    #st.subheader('Keywords')
     input_model = load_model('distilroberta-base')
     
     tokenizer = input_model['tokenizer']
@@ -101,28 +123,46 @@ def analyse_text(text):
     candidate_embeddings = model(**candidate_tokens)["pooler_output"]
 
     text_tokens = tokenizer([text], return_tensors = 'pt')
-    text_embedding = model(**text_tokens)['pooler_output']
+    text_embeddings = model(**text_tokens)['pooler_output']
     
-    st.subheader('Distance')
+    #st.subheader('Distance')
     candidate_embeddings = candidate_embeddings.detach().numpy()
     text_embeddings = text_embeddings.detach().numpy()
 
-    top_k = 5
-    distances = cosine_similarity(text_embedding, candidate_embeddings)
+    top_k = 10
+    distances = cosine_similarity(text_embeddings, candidate_embeddings)
     keywords = [candidates[index] for index in distances.argsort()[0][-top_k:]]
-
-    st.write(keywords)
-
-    return
-    '''
-    nlp = spacy.load('en_core_web_sm')
-    doc = nlp(text.lower())
-    key_themes = [token.lemma_ for token in doc if not token.is_stop and token.is_alpha]
-    theme_counts = Counter(key_themes)
-    min_frequency = 2
-    filtered_themes = {theme: count for theme, count in theme_counts.items() if count >= min_frequency}
+    keyword_count = Counter(keywords)
     excluded_keywords = ['research', 'uk', 'vehicle', 'european', 'use', 'commons', 'impact', 'transport', 'road', 'phd', 'work', 'topic', 'complete',
-                         'institute', 'study', 'fellow', 'university', 'senior', 'director', 'lead', 'significant', 'include', 'leadership']
-    filtered_themes = {key: value for key, value in filtered_themes.items() if key not in excluded_keywords}
-    
-    return filtered_themes'''
+                         'institute', 'study', 'fellow', 'university', 'senior', 'director', 'lead', 'significant', 'include', 'leadership', 'leader',
+                         'planning', 'programme', 'professor', 'solution', 'knowledge', 'smad', 'project', 'problem', 'example', 'co', 'group', 'drive',
+                         'head', 'school', 'web', 'search', 'faculty', 'currently', 'undergraduate', 'lecturer', 'postgraduate', 'interest',
+                         'list', 'department', 'course', 'degree', 'application', 'technique', 'allresearch', 'partner', 'manager',
+                         'management', 'paper', 'teaching', 'scheme', 'employment', 'history', 'experience', 'journal', 'theme', 'sharing',
+                         'engineer', 'solicitor', 'expertise', 'diploma']
+    filtered_themes = {key: value for key, value in keyword_count.items() if key not in excluded_keywords}
+    #st.write(keyword_count)
+    #st.write(filtered_themes)
+
+    #st.write(keywords)
+
+    return filtered_themes
+
+def make_profile(name, profile_data):
+    kw_all = Counter()
+    for section, text in profile_data.items():
+        kw = analyse_text(text)
+        #st.write(kw)
+        kw_all.update(kw)
+    profile = {'id': name, 'interests': dict(kw_all)}
+
+    return profile
+
+def profile_from_link(url):
+    name = url.split('/')[-1]
+
+    html_content = fetch_html(url)
+    profile_data = scrape_profile_data(html_content)
+    profile = make_profile(name, profile_data)
+
+    return profile

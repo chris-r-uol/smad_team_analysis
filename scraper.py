@@ -89,40 +89,24 @@ def scrape_profile_data(html):
     else:
         st.warning('Warning: No Class CMS DIV found on the page')
         return None
+
 @st.cache_resource()
 def analyse_text(text):
 
     nlp = spacy.load('en_core_web_sm')
     doc = nlp(text.lower())
-    #st.write(text.lower())
-    #noun_phrases = set(chunk.text.strip().lower for chunk in doc.noun_chunks)
-    #nouns = set()
-    #for token in doc:
-    #    if token.pos_ == 'NOUN':
-    #        nouns.add(token.text)
-    
-    #all_nouns = nouns.union(noun_phrases)
-    #st.subheader('spaCy')
-    #st.write(all_nouns)
     
     candidates = [token.lemma_ for token in doc if not token.is_stop and token.is_alpha and token.pos_ == 'NOUN']
-    #candidates = [token.lemma_ for token in all_nouns if not token.is_stop and token.is_alpha]
     
-    #st.write(all_nouns)
-    #st.write(candidates)
-
-    #st.write(candidates_old)
-
-    #st.subheader('Keywords')
-    input_model = load_model('distilroberta-base')
     
-    tokenizer = input_model['tokenizer']
-    model = input_model['model']
+    
+    tokenizer = st.session_state['input_model']['tokenizer']
+    model = st.session_state['input_model']['model']
 
-    candidate_tokens = tokenizer(candidates, padding=True, return_tensors = "pt")
+    candidate_tokens = tokenizer(candidates, padding=True, return_tensors = "pt", truncation = True)
     candidate_embeddings = model(**candidate_tokens)["pooler_output"]
 
-    text_tokens = tokenizer([text], return_tensors = 'pt')
+    text_tokens = tokenizer([text], padding = True, return_tensors = 'pt', truncation = True)
     text_embeddings = model(**text_tokens)['pooler_output']
     
     #st.subheader('Distance')
@@ -139,7 +123,7 @@ def analyse_text(text):
                          'head', 'school', 'web', 'search', 'faculty', 'currently', 'undergraduate', 'lecturer', 'postgraduate', 'interest',
                          'list', 'department', 'course', 'degree', 'application', 'technique', 'allresearch', 'partner', 'manager',
                          'management', 'paper', 'teaching', 'scheme', 'employment', 'history', 'experience', 'journal', 'theme', 'sharing',
-                         'engineer', 'solicitor', 'expertise', 'diploma']
+                         'engineer', 'solicitor', 'expertise', 'diploma', 'member', 'workpackage', 'multitute', 'msc', 'position', 'committee']
     filtered_themes = {key: value for key, value in keyword_count.items() if key not in excluded_keywords}
     #st.write(keyword_count)
     #st.write(filtered_themes)

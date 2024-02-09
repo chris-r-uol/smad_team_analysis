@@ -26,7 +26,8 @@ def plot_graph(graph):
         node_x.append(x)
         node_y.append(y)
         text.append(f"User {node}<br>Interests: {', '.join(graph.nodes[node]['interests'])}")
-        node_sizes.append(5 * (1 + graph.degree[node]))  # Adjust node size based on degree
+        #node_sizes.append(5 * (1 + graph.degree[node]))  # Adjust node size based on degree
+        node_sizes.append(20)
         degrees.append(graph.degree[node])  # Store degree for use in colorbar
         
     
@@ -36,7 +37,6 @@ def plot_graph(graph):
     line=dict(width=1.0, color='#888'),
     hoverinfo='text',
     mode='lines')
-    
     # Node plots
     node_trace = go.Scatter(
     x=node_x, y=node_y,
@@ -44,9 +44,10 @@ def plot_graph(graph):
     hoverinfo='text',
     text = text,
     #fill = degrees,
+    
     marker=dict(
         showscale=True,
-        colorscale='YlGnBu',
+        colorscale= st.session_state['colour_gradient'], #good schemes: Plasma, Haline, 
         size=node_sizes,
         color = degrees,
         colorbar=dict(
@@ -72,9 +73,10 @@ def plot_graph(graph):
                 hovermode='closest',
                 margin=dict(b=0, l=0, r=0, t=0),
                 xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)))
+                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                )
     
-
+    fig.update_layout(height = 900)
     return fig
 
 
@@ -99,3 +101,18 @@ def make_graph_from_profiles(profiles):
                 graph.add_edge(profiles[i]['id'], profiles[j]['id'], common_interests=common_interests)
     
     return graph
+
+def rearrange_dicts(original_dicts):
+    interests_mapping = {}
+
+    for original_dict in original_dicts:
+        for interest, value in original_dict["interests"].items():
+            if interest not in interests_mapping:
+                interests_mapping[interest] = {}
+            interests_mapping[interest][original_dict["id"]] = value
+
+    for interest, id_values in interests_mapping.items():
+        new_dict = {"id": interest, "interests": id_values}
+        yield new_dict
+
+    

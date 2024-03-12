@@ -2,6 +2,9 @@ import streamlit as st
 import scraper
 import graph 
 from collections import Counter
+
+#import nlp
+
 st.set_page_config(layout='wide')
 st.title('Web Scraper and CRM Analysis')
 
@@ -43,7 +46,9 @@ urls = ['https://environment.leeds.ac.uk/transport/staff/975/professor-simon-she
         'https://environment.leeds.ac.uk/transport/staff/932/professor-susan-grant-muller',
         'https://environment.leeds.ac.uk/transport/staff/9273/dr-ye-liu',
         'https://environment.leeds.ac.uk/transport/staff/918/dr-yvonne-barnard',
-        'https://environment.leeds.ac.uk/transport/staff/12594/dr-afzal-ahmed'
+        'https://environment.leeds.ac.uk/transport/staff/12594/dr-afzal-ahmed',
+        'https://environment.leeds.ac.uk/transport/staff/987/professor-david-watling',
+        'https://environment.leeds.ac.uk/transport/staff/1830/dr-zia-wadud'
         ]
 
 st.header('Graphs')
@@ -70,6 +75,13 @@ interests_graph = graph.make_graph_from_profiles(interests)
 plot_interests_graph = graph.plot_graph(interests_graph)
 st.plotly_chart(plot_interests_graph, use_container_width=True)
 
+#st.subheader('Weighted Graph With Interests as Nodes')
+#weighted_interests_graph = graph.make_weighted_graph_from_profiles(interests)
+#plot_weighted_interests_graph = graph.plot_weighted_graph(weighted_interests_graph)
+#st.plotly_chart(plot_weighted_interests_graph, use_container_width=True)
 
+#interest_list = [i['id'] for i in interests]
+#st.write(interest_list)
 
-
+#clustered_words = nlp.get_clustered_words(nlp.words)
+#st.write(clustered_words.items())

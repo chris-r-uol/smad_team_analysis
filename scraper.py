@@ -2,15 +2,22 @@ import requests
 import streamlit as st
 import re
 import spacy
-
+import words
 import torch
 from bs4 import BeautifulSoup
 from collections import Counter
 from transformers import AutoModel, AutoTokenizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-
-#token = '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'
+EXCLUDED_KEYWORDS = ['research', 'uk', 'vehicle', 'european', 'use', 'commons', 'impact', 'road', 'phd', 'work', 'topic', 'complete',
+                         'institute', 'study', 'fellow', 'university', 'senior', 'director', 'lead', 'significant', 'include', 'leadership', 'leader',
+                         'planning', 'programme', 'professor', 'solution', 'knowledge', 'smad', 'project', 'problem', 'example', 'co', 'group', 'drive',
+                         'head', 'school', 'web', 'search', 'faculty', 'currently', 'undergraduate', 'lecturer', 'postgraduate', 'interest',
+                         'list', 'department', 'course', 'degree', 'application', 'technique', 'allresearch', 'partner', 'manager',
+                         'management', 'paper', 'teaching', 'scheme', 'employment', 'history', 'experience', 'journal', 'theme', 'sharing',
+                         'engineer', 'solicitor', 'expertise', 'diploma', 'member', 'workpackage', 'multitute', 'msc', 'position', 'committee',
+                         'expert', 'editorial', 'hongkongbank', 'master', 'admission', 'tutor', 'transport', 'editor', 'hon', 'sector', 'instr',
+                         'september', 'jun']
 
 @st.cache_resource
 def load_model(model_name):
@@ -37,12 +44,11 @@ def scrape_profile_data(html):
     
     # Select the specific div with class="cms"
     cms_div = soup.find('div', class_='cms')
-    #st.code(cms_div)
-    #cms_div = re.sub(r'</ul>\s*<p>', '</ul> <p>', cms_div)
+
     if cms_div:
         # Extract text content from the selected div
-        #data_text = cms_div.get_text(strip=True)
         data_text = cms_div.get_text().join(cms_div.strings)
+
         # Add a space after closing </ul> tag and before <p> tag
         data_text = re.sub(r'</ul>\s*<p>', '</ul> <p>', data_text)
         
@@ -90,15 +96,16 @@ def scrape_profile_data(html):
         st.warning('Warning: No Class CMS DIV found on the page')
         return None
 
+nlp = spacy.load('en_core_web_sm')
+
 @st.cache_resource()
 def analyse_text(text):
 
-    nlp = spacy.load('en_core_web_sm')
+    
     doc = nlp(text.lower())
     
     candidates = [token.lemma_ for token in doc if not token.is_stop and token.is_alpha and token.pos_ == 'NOUN']
-    
-    
+    #candidates = [c for c in all_candidates if c not in EXCLUDED_KEYWORDS]
     
     tokenizer = st.session_state['input_model']['tokenizer']
     model = st.session_state['input_model']['model']
@@ -113,23 +120,18 @@ def analyse_text(text):
     candidate_embeddings = candidate_embeddings.detach().numpy()
     text_embeddings = text_embeddings.detach().numpy()
 
-    top_k = 10
+    top_k = 15
     distances = cosine_similarity(text_embeddings, candidate_embeddings)
     keywords = [candidates[index] for index in distances.argsort()[0][-top_k:]]
+    #keywords = [words.smad_words[kw] for kw in keywords]
     keyword_count = Counter(keywords)
-    excluded_keywords = ['research', 'uk', 'vehicle', 'european', 'use', 'commons', 'impact', 'transport', 'road', 'phd', 'work', 'topic', 'complete',
-                         'institute', 'study', 'fellow', 'university', 'senior', 'director', 'lead', 'significant', 'include', 'leadership', 'leader',
-                         'planning', 'programme', 'professor', 'solution', 'knowledge', 'smad', 'project', 'problem', 'example', 'co', 'group', 'drive',
-                         'head', 'school', 'web', 'search', 'faculty', 'currently', 'undergraduate', 'lecturer', 'postgraduate', 'interest',
-                         'list', 'department', 'course', 'degree', 'application', 'technique', 'allresearch', 'partner', 'manager',
-                         'management', 'paper', 'teaching', 'scheme', 'employment', 'history', 'experience', 'journal', 'theme', 'sharing',
-                         'engineer', 'solicitor', 'expertise', 'diploma', 'member', 'workpackage', 'multitute', 'msc', 'position', 'committee']
-    filtered_themes = {key: value for key, value in keyword_count.items() if key not in excluded_keywords}
+    
+    filtered_themes = {key: value for key, value in keyword_count.items() if key not in EXCLUDED_KEYWORDS}
     #st.write(keyword_count)
     #st.write(filtered_themes)
 
     #st.write(keywords)
-
+    #return keyword_count
     return filtered_themes
 
 def make_profile(name, profile_data):

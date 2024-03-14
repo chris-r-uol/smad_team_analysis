@@ -16,7 +16,7 @@ if 'colour_gradient' in st.session_state == False:
 if 'second_model' in st.session_state == False:
     st.session_state['second_model'] = None
 
-which_model = st.selectbox('Select Model', options = ['distilroberta-base', 'bert-base-uncased'])
+which_model = st.selectbox('Select Model', options = ['distilroberta-base', 'bert-base-uncased', 'nghuyong/ernie-2.0-en'])
 #new_model = st.selectbox('Select Model', options = ['bert-base-uncased'])
 
 st.session_state['input_model'] = scraper.load_model(which_model)

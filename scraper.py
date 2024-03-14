@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from collections import Counter
 from transformers import AutoModel, AutoTokenizer
 from sklearn.metrics.pairwise import cosine_similarity
+<<<<<<< Updated upstream
 
 EXCLUDED_KEYWORDS = ['research', 'uk', 'vehicle', 'european', 'use', 'commons', 'impact', 'road', 'phd', 'work', 'topic', 'complete',
                          'institute', 'study', 'fellow', 'university', 'senior', 'director', 'lead', 'significant', 'include', 'leadership', 'leader',
@@ -18,6 +19,22 @@ EXCLUDED_KEYWORDS = ['research', 'uk', 'vehicle', 'european', 'use', 'commons', 
                          'engineer', 'solicitor', 'expertise', 'diploma', 'member', 'workpackage', 'multitute', 'msc', 'position', 'committee',
                          'expert', 'editorial', 'hongkongbank', 'master', 'admission', 'tutor', 'transport', 'editor', 'hon', 'sector', 'instr',
                          'september', 'jun']
+=======
+from sklearn.metrics import pairwise_distances_argmin_min
+from sklearn.cluster import KMeans
+from scipy.spatial.distance import cdist
+
+#token = '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'
+>>>>>>> Stashed changes
+
+excluded_keywords = ['research', 'uk', 'vehicle', 'european', 'use', 'commons', 'impact', 'transport', 'road', 'phd', 'work', 'topic', 'complete',
+                         'institute', 'study', 'fellow', 'university', 'senior', 'director', 'lead', 'significant', 'include', 'leadership', 'leader',
+                         'planning', 'programme', 'professor', 'solution', 'knowledge', 'smad', 'project', 'problem', 'example', 'co', 'group', 'drive',
+                         'head', 'school', 'web', 'search', 'faculty', 'currently', 'undergraduate', 'lecturer', 'postgraduate', 'interest',
+                         'list', 'department', 'course', 'degree', 'application', 'technique', 'allresearch', 'partner', 'manager',
+                         'management', 'paper', 'teaching', 'scheme', 'employment', 'history', 'experience', 'journal', 'theme', 'sharing',
+                         'engineer', 'solicitor', 'expertise', 'diploma', 'member', 'workpackage', 'multitute', 'msc', 'position', 'committee', 'hon',
+                         'tutor', 'master', 'september', 'scholarship', 'hongkongbank', 'leed']
 
 @st.cache_resource
 def load_model(model_name):
@@ -96,6 +113,7 @@ def scrape_profile_data(html):
         st.warning('Warning: No Class CMS DIV found on the page')
         return None
 
+<<<<<<< Updated upstream
 nlp = spacy.load('en_core_web_sm')
 
 @st.cache_resource()
@@ -109,17 +127,71 @@ def analyse_text(text):
     
     tokenizer = st.session_state['input_model']['tokenizer']
     model = st.session_state['input_model']['model']
+=======
+#@st.cache_resource()
+def analyse_text(text):
+    top_k = 6
+    nlp = spacy.load('en_core_web_sm')
+    doc = nlp(text.lower())
+    
+    #nouns = [token for token in doc if not token.is_stop and token.is_alpha and token.pos_ == 'NOUN']
+    #st.write('nouns')
+    #st.write(nouns)
+    #st.write('candidates lemma')
+    #lemmas = [noun.lemma_ for noun in nouns]
+>>>>>>> Stashed changes
 
+    #noun_to_lemma = {str(noun): str(lemma) for noun, lemma in zip(nouns, lemmas)}
+
+    #st.write(noun_to_lemma)
+    candidates = [token.lemma_ for token in doc if not token.is_stop and token.is_alpha and token.pos_ == 'NOUN']
+
+    #st.write(candidates)
+    candidates = [key for key in candidates if key not in excluded_keywords]
+    #st.write(candidates)
+
+    #tokenizer = st.session_state['input_model']['tokenizer']
+    #model = st.session_state['input_model']['model']
+
+    tokenizer = st.session_state['second_model']['tokenizer']
+    model = st.session_state['second_model']['model']
+    #st.write(candidates)
+    if len(candidates) == 0:
+        return {}
+    
     candidate_tokens = tokenizer(candidates, padding=True, return_tensors = "pt", truncation = True)
     candidate_embeddings = model(**candidate_tokens)["pooler_output"]
-
-    text_tokens = tokenizer([text], padding = True, return_tensors = 'pt', truncation = True)
-    text_embeddings = model(**text_tokens)['pooler_output']
     
-    #st.subheader('Distance')
-    candidate_embeddings = candidate_embeddings.detach().numpy()
-    text_embeddings = text_embeddings.detach().numpy()
+    #st.write(len(candidate_embeddings))
+    if len(candidate_embeddings) <= top_k:
+        top_n = len(candidate_embeddings)
+    else:
+        top_n = top_k
+    kmeans = KMeans(n_clusters=top_n, random_state=0).fit(candidate_embeddings.detach().numpy())
+    cluster_centers = kmeans.cluster_centers_
+    labels = kmeans.labels_
+    closest, _ = pairwise_distances_argmin_min(cluster_centers, candidate_embeddings.detach().numpy())
+    cluster_representatives = [candidates[idx] for idx in closest]
+    word_to_cluster = {word: labels[idx] for idx, word in enumerate(candidates)}
+    #st.write('cluster representatives')
+    #st.write(cluster_representatives)
+    
 
+    #text_tokens = tokenizer([text], padding = True, return_tensors = 'pt', truncation = True)
+    #text_embeddings = model(**text_tokens)['pooler_output']
+    #
+    #st.subheader('Distance')
+    #candidate_embeddings = candidate_embeddings.detach().numpy()
+    #text_embeddings = text_embeddings.detach().numpy()
+
+    
+    #distances = cosine_similarity(text_embeddings, candidate_embeddings)
+    #keywords = [candidates[index] for index in distances.argsort()[0][-top_k:]]
+    #keyword_count = Counter(keywords)
+    
+    keyword_count = Counter(cluster_representatives)
+
+<<<<<<< Updated upstream
     top_k = 15
     distances = cosine_similarity(text_embeddings, candidate_embeddings)
     keywords = [candidates[index] for index in distances.argsort()[0][-top_k:]]
@@ -132,6 +204,10 @@ def analyse_text(text):
 
     #st.write(keywords)
     #return keyword_count
+=======
+    filtered_themes = {key: value for key, value in keyword_count.items() if key not in excluded_keywords}
+
+>>>>>>> Stashed changes
     return filtered_themes
 
 def make_profile(name, profile_data):

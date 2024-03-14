@@ -25,7 +25,7 @@ def plot_graph(graph):
         x,y = pos[node]
         node_x.append(x)
         node_y.append(y)
-        text.append(f"User {node}<br>Interests: {', '.join(graph.nodes[node]['interests'])}")
+        text.append(f"Node {node}<br>Links: {', '.join(graph.nodes[node]['interests'])}")
         #node_sizes.append(5 * (1 + graph.degree[node]))  # Adjust node size based on degree
         node_sizes.append(20)
         degrees.append(graph.degree[node])  # Store degree for use in colorbar

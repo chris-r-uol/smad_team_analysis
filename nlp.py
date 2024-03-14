@@ -1,4 +1,5 @@
 import streamlit as st
+<<<<<<< Updated upstream
 
 import spacy
 from sklearn.cluster import AgglomerativeClustering
@@ -165,6 +166,36 @@ for cluster in clusters.values():
 
 print("Good words:", good_words)
 print("Bad words:", bad_words)
+=======
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import PorterStemmer
+from nltk.stem import WordNetLemmatizer
 
+# Download NLTK resources
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
 
+def make_synonyms(nouns):
+    tokens = word_tokenize(' '.join(nouns))
+    tokens = [word.lower() for word in tokens]
+>>>>>>> Stashed changes
 
+    stop_words = set(stopwords.words('english'))
+    tokens = [word for word in tokens if word not in stop_words]
+
+<<<<<<< Updated upstream
+
+=======
+    stemmer = PorterStemmer()
+    stemmed_words = [stemmer.stem(word) for word in tokens]
+
+    lemmatizer = WordNetLemmatizer()
+    lemmatized_words = [lemmatizer.lemmatize(word) for word in tokens]
+
+    st.write(nouns)
+    st.write(stemmed_words)
+    st.write(lemmatized_words)
+>>>>>>> Stashed changes

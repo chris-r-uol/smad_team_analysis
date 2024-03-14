@@ -1,7 +1,7 @@
 import streamlit as st
 import scraper
 import graph 
-import nlp
+#import nlp
 from collections import Counter
 
 #import nlp
@@ -16,10 +16,10 @@ if 'colour_gradient' in st.session_state == False:
 if 'second_model' in st.session_state == False:
     st.session_state['second_model'] = None
 
-which_model = st.selectbox('Select Model', options = ['distilroberta-base'])
-new_model = st.selectbox('Select Model', options = ['bert-base-uncased'])
+which_model = st.selectbox('Select Model', options = ['distilroberta-base', 'bert-base-uncased'])
+#new_model = st.selectbox('Select Model', options = ['bert-base-uncased'])
 
-st.session_state['input_model'] = scraper.load_model('distilroberta-base')
+st.session_state['input_model'] = scraper.load_model(which_model)
 st.session_state['second_model'] = scraper.load_model('bert-base-uncased')
 
 st.header('Single Profile Analysis')
@@ -80,19 +80,10 @@ interests_graph = graph.make_graph_from_profiles(interests)
 plot_interests_graph = graph.plot_graph(interests_graph)
 st.plotly_chart(plot_interests_graph, use_container_width=True)
 
-<<<<<<< Updated upstream
 #st.subheader('Weighted Graph With Interests as Nodes')
 #weighted_interests_graph = graph.make_weighted_graph_from_profiles(interests)
 #plot_weighted_interests_graph = graph.plot_weighted_graph(weighted_interests_graph)
 #st.plotly_chart(plot_weighted_interests_graph, use_container_width=True)
-=======
-keywords = []
-for i in interests:
-    keywords.append(i['id'])
-
-#st.write(keywords)
-#nlp.make_synonyms(keywords)
->>>>>>> Stashed changes
 
 #interest_list = [i['id'] for i in interests]
 #st.write(interest_list)
